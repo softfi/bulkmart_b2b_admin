@@ -3,8 +3,13 @@
 namespace App\Http\Controllers\Vendor;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Models\VendorPurchase;
+use App\Models\VendorPurchaseStatusHistory;
+use App\Notifications\VendorPurchaseResponded;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class VendorPurchaseController extends Controller
 {
@@ -31,7 +36,6 @@ class VendorPurchaseController extends Controller
     {
         $profile = $request->user()->vendorProfile;
 
-        // A vendor must never access another vendor's purchase.
         abort_unless(
             $profile &&
             (int) $purchase->vendor_profile_id === (int) $profile->id,
@@ -51,10 +55,7 @@ class VendorPurchaseController extends Controller
 
         $remainingQuantity = max(
             0,
-            round(
-                (float) $purchase->quantity - $receivedQuantity,
-                3
-            )
+            round((float) $purchase->quantity - $receivedQuantity, 3)
         );
 
         return view('vendor.purchases.show', compact(
@@ -62,5 +63,134 @@ class VendorPurchaseController extends Controller
             'receivedQuantity',
             'remainingQuantity'
         ));
+    }
+
+    public function respond(Request $request, VendorPurchase $purchase)
+    {
+        $profile = $request->user()->vendorProfile;
+
+        abort_unless(
+            $profile &&
+            (int) $purchase->vendor_profile_id === (int) $profile->id,
+            404
+        );
+
+        $validated = $request->validate([
+            'decision' => ['required', 'in:accepted,rejected'],
+            'reason' => [
+                'required_if:decision,rejected',
+                'nullable',
+                'string',
+                'min:5',
+                'max:2000',
+            ],
+        ]);
+
+        DB::transaction(function () use ($request, $purchase, $validated) {
+            $lockedPurchase = VendorPurchase::whereKey($purchase->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (
+                (int) $lockedPurchase->vendor_profile_id !==
+                (int) $request->user()->vendorProfile->id
+            ) {
+                abort(404);
+            }
+
+            if (
+                $lockedPurchase->vendor_response_status !== 'pending' ||
+                $lockedPurchase->status !== 'ordered'
+            ) {
+                throw ValidationException::withMessages([
+                    'decision' =>
+                        'This purchase is no longer awaiting vendor confirmation.',
+                ]);
+            }
+
+            $oldStatus = $lockedPurchase->status;
+            $decision = $validated['decision'];
+
+            if ($decision === 'rejected') {
+                $product = Product::withTrashed()
+                    ->whereKey($lockedPurchase->product_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $receivedQuantity = (float) $lockedPurchase->goodsReceipts()
+                    ->with('items')
+                    ->get()
+                    ->flatMap(fn ($receipt) => $receipt->items)
+                    ->sum('quantity_received');
+
+                if ($receivedQuantity > 0) {
+                    throw ValidationException::withMessages([
+                        'decision' =>
+                            'A purchase with received goods cannot be rejected.',
+                    ]);
+                }
+
+                $orderedQuantity = (float) $lockedPurchase->quantity;
+                $reservedQuantity = (float) $product->reserved_quantity;
+
+                if ($reservedQuantity < $orderedQuantity) {
+                    throw ValidationException::withMessages([
+                        'decision' =>
+                            'Reserved stock is inconsistent. Contact the administrator before rejecting.',
+                    ]);
+                }
+
+                // Release the product-level reservation once.
+                $product->decrement('reserved_quantity', $orderedQuantity);
+
+                $lockedPurchase->update([
+                    'status' => 'cancelled',
+                    'vendor_response_status' => 'rejected',
+                    'vendor_response_reason' => $validated['reason'],
+                    'vendor_responded_at' => now(),
+                ]);
+            } else {
+                $lockedPurchase->update([
+                    'vendor_response_status' => 'accepted',
+                    'vendor_response_reason' => null,
+                    'vendor_responded_at' => now(),
+                ]);
+            }
+
+            VendorPurchaseStatusHistory::create([
+                'vendor_purchase_id' => $lockedPurchase->id,
+                'changed_by' => $request->user()->id,
+                'previous_status' => $oldStatus,
+                'new_status' => $lockedPurchase->status,
+                'previous_payment_status' => $lockedPurchase->payment_status,
+                'new_payment_status' => $lockedPurchase->payment_status,
+                'notes' => $decision === 'accepted'
+                    ? 'Vendor accepted the full requested quantity.'
+                    : 'Vendor rejected the purchase. Reason: ' .
+                        $validated['reason'] .
+                        '. Outstanding product reservation released.',
+            ]);
+
+            $lockedPurchase->load([
+                'creator',
+                'product',
+                'vendorProfile',
+            ]);
+
+            if ($lockedPurchase->creator) {
+                $lockedPurchase->creator->notify(
+                    new VendorPurchaseResponded($lockedPurchase)
+                );
+            }
+        });
+
+        return redirect()
+            ->route('vendor.purchases.show', $purchase)
+            ->with(
+                'success',
+                $validated['decision'] === 'accepted'
+                    ? 'Purchase accepted successfully.'
+                    : 'Purchase rejected. Reserved stock has been released.'
+            );
     }
 }

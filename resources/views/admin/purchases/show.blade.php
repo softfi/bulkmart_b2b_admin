@@ -609,6 +609,55 @@
         </div>
     </div>
 
+    
+{{-- Vendor confirmation --}}
+<div class="purchase-card mb-4">
+    <div class="purchase-card-header">
+        <h5>Vendor Confirmation</h5>
+    </div>
+
+    <div class="purchase-card-body">
+        @if($purchase->vendor_response_status === 'pending')
+            <span class="badge bg-warning">
+                Awaiting Vendor Confirmation
+            </span>
+
+            <p class="muted-note mt-2 mb-0">
+                The vendor has not responded to this purchase yet.
+            </p>
+
+        @elseif($purchase->vendor_response_status === 'accepted')
+            <span class="badge bg-success">
+                Accepted by Vendor
+            </span>
+
+            <p class="muted-note mt-2 mb-0">
+                @if($purchase->vendor_responded_at)
+                    Vendor responded on
+                    {{ $purchase->vendor_responded_at->format('d M Y, h:i A') }}.
+                @endif
+            </p>
+
+        @elseif($purchase->vendor_response_status === 'rejected')
+            <span class="badge bg-danger">
+                Rejected by Vendor
+            </span>
+
+            <div class="mt-3">
+                <div class="detail-label">Vendor's rejection reason</div>
+                <div class="detail-value">
+                    {{ $purchase->vendor_response_reason }}
+                </div>
+            </div>
+
+            <p class="muted-note mt-2 mb-0">
+                Outstanding reserved stock has been released.
+                Create a new purchase if you want to select another vendor.
+            </p>
+        @endif
+    </div>
+</div>
+
     <div class="row g-3">
 
         {{-- Purchase information --}}

@@ -92,6 +92,94 @@
     </div>
 </div>
 
+@if($purchase->vendor_response_status === 'pending' && $purchase->status === 'ordered')
+    <div class="vendor-card p-4 mb-4">
+        <h5 class="mb-2">Purchase Confirmation Required</h5>
+
+        <p class="muted-text">
+            The admin has requested the full quantity shown above.
+            Please confirm whether you can fulfil this purchase.
+        </p>
+
+        <div class="d-flex flex-wrap gap-2">
+            <form method="POST"
+                  action="{{ route('vendor.purchases.respond', $purchase) }}"
+                  onsubmit="return confirm('Confirm that you can supply the full requested quantity?')">
+                @csrf
+
+                <input type="hidden" name="decision" value="accepted">
+
+                <button type="submit" class="btn btn-success">
+                    Accept Purchase
+                </button>
+            </form>
+
+            <button type="button"
+                    class="btn btn-danger"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#rejectPurchaseForm">
+                Reject Purchase
+            </button>
+        </div>
+
+        <div class="collapse mt-3" id="rejectPurchaseForm">
+            <form method="POST"
+                  action="{{ route('vendor.purchases.respond', $purchase) }}"
+                  onsubmit="return confirm('Reject this purchase? The reserved quantity will be released.')">
+                @csrf
+
+                <input type="hidden" name="decision" value="rejected">
+
+                <label class="form-label" for="rejectionReason">
+                    Reason for rejection
+                </label>
+
+                <textarea
+                    name="reason"
+                    id="rejectionReason"
+                    class="form-control"
+                    rows="3"
+                    minlength="5"
+                    maxlength="2000"
+                    required
+                    placeholder="Explain why you cannot fulfil this purchase..."
+                ></textarea>
+
+                @error('reason')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
+
+                <button type="submit" class="btn btn-danger mt-3">
+                    Confirm Rejection
+                </button>
+            </form>
+        </div>
+    </div>
+@else
+    <div class="vendor-card p-4 mb-4">
+        <h5 class="mb-2">Vendor Response</h5>
+
+        @if($purchase->vendor_response_status === 'accepted')
+            <span class="badge bg-success">Accepted</span>
+            <p class="muted-text mt-2 mb-0">
+                You confirmed the full requested quantity
+                @if($purchase->vendor_responded_at)
+                    on {{ $purchase->vendor_responded_at->format('d M Y, h:i A') }}.
+                @endif
+            </p>
+        @elseif($purchase->vendor_response_status === 'rejected')
+            <span class="badge bg-danger">Rejected</span>
+            <p class="muted-text mt-2 mb-1">Your rejection reason:</p>
+            <p class="mb-0">{{ $purchase->vendor_response_reason }}</p>
+        @elseif($purchase->status === 'cancelled')
+            <span class="badge bg-secondary">Cancelled by admin</span>
+            <p class="muted-text mt-2 mb-0">
+                This purchase is no longer active.
+            </p>
+        @endif
+    </div>
+@endif
+
 <div class="vendor-card p-4 mb-4">
     <h5 class="mb-3">Goods receiving history</h5>
 

@@ -306,4 +306,10 @@ Route::prefix('vendor')
 
         Route::patch('/notifications/{notification}/read', [VendorNotificationController::class, 'markAsRead'])
             ->name('notifications.read');
+            
+        Route::post('/purchases/{purchase}/respond', [
+            VendorPortalPurchaseController::class,
+            'respond',
+            ])->name('purchases.respond');
+
 });

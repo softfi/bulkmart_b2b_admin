@@ -25,6 +25,9 @@ class VendorPurchase extends Model
         'purchase_date',
         'expected_delivery_date',
         'notes',
+        'vendor_response_status',
+        'vendor_response_reason',
+        'vendor_responded_at',
     ];
 
     protected $casts = [
@@ -33,6 +36,7 @@ class VendorPurchase extends Model
         'subtotal' => 'decimal:2',
         'purchase_date' => 'date',
         'expected_delivery_date' => 'date',
+        'vendor_responded_at' => 'datetime',
     ];
 
     public function vendorProfile(): BelongsTo

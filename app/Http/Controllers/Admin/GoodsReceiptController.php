@@ -21,6 +21,12 @@ class GoodsReceiptController extends Controller
     {
         $purchase->load(['vendorProfile', 'product']);
 
+        abort_unless(
+            $purchase->vendor_response_status === 'accepted',
+            422,
+            'The vendor must accept this purchase before goods can be received.'
+        );
+
         if ($purchase->product_variant_id) {
             $purchase->setRelation(
                 'productVariant',
@@ -72,6 +78,13 @@ class GoodsReceiptController extends Controller
             $lockedPurchase = VendorPurchase::whereKey($purchase->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if ($lockedPurchase->vendor_response_status !== 'accepted') {
+                throw ValidationException::withMessages([
+                    'quantity_received' =>
+                        'The vendor must accept this purchase before goods can be received.',
+                ]);
+            }
 
             if (in_array($lockedPurchase->status, ['cancelled', 'received'], true)) {
                 throw ValidationException::withMessages([
