@@ -1,0 +1,24 @@
+HTTP/1.1 302 Found
+Date: Thu, 19 Nov 2026 05:48:00 GMT
+Server: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.2.12
+X-Powered-By: PHP/8.2.12
+Cache-Control: no-cache, private
+Location: http://localhost/b2c/public/admin/login
+Set-Cookie: XSRF-TOKEN=eyJpdiI6Ijh3OFFxbTREd0xzVmRlMlVpY3FCT2c9PSIsInZhbHVlIjoieVhTQkhMajRacVVoYjgxR3FwL3ZhMlNOU0ZXbkZCeUxjc0pnQzVBT2h4NWZWSDZEMUxTcEhwUjBzSExzSEN5T3dMTCsyWThSSzgxRjM2ckhmandlL1c5aU15VTZibVBuRVVsU3Y5bkJ2MFoxTzFZK2t2ckpFKzB3NmF5YlVBMkciLCJtYWMiOiIxYWI0NTYwZjI1OWEzMmFlODNjMzhlYzNkMmE2ZTc1YjY5M2I5ZmEyZDkyZWViMjY3ZGVjYjIxNjM2NWQ0MTg5IiwidGFnIjoiIn0%3D; expires=Thu, 19 Nov 2026 07:48:01 GMT; Max-Age=7200; path=/; samesite=lax
+Set-Cookie: wholesale_platform_session=eyJpdiI6IllKM3RabnV1dVZpMUFBRFM2dDc3SGc9PSIsInZhbHVlIjoibmxBMW1VUXJoc1NSaE14R3Jyc09mNDlSRkE0YkR1eEtiK1d3MzZmMHNteEh0NWFQdHVEcUhvSXRjcUFEVHBSaFpRV3FrQWxNbDhFZ3prZjFxK0VoM0s1a0dpM243MVZ5eTZkSnNxSWVvcktOVFpreVFlNzVod1ZMaFpYS1l3cVYiLCJtYWMiOiIxNTA1ZGFjNjk2MmFkNjU2MjU1Y2JiNGNiMDkyMmU4YWJhNjYyYzlkMGQxMzcyYTcyYWNhNjI1YTMyNmYxNzY2IiwidGFnIjoiIn0%3D; expires=Thu, 19 Nov 2026 07:48:01 GMT; Max-Age=7200; path=/; httponly; samesite=lax
+Transfer-Encoding: chunked
+Content-Type: text/html; charset=utf-8
+
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="refresh" content="0;url='http://localhost/b2c/public/admin/login'" />
+
+        <title>Redirecting to http://localhost/b2c/public/admin/login</title>
+    </head>
+    <body>
+        Redirecting to <a href="http://localhost/b2c/public/admin/login">http://localhost/b2c/public/admin/login</a>.
+    </body>
+</html>
